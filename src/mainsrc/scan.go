@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+func saveneighbor(neighbor *NetNeighbor) error {
+	fmt.Println(neighbor)
+	return nil
+}
 func main() {
 	const URL = "http://api.joybase.jd.com/network_devices?management_ip=172.28.1.1,172.28.1.5&service_status=%E5%9C%A8%E7%BA%BF"
 	worker := &NetNeighborScanner{
@@ -31,7 +35,7 @@ func main() {
 
 	go worker.GenerateNeighbor()
 	worker.ReadChannel()
-	worker.SaveNeighbor()
+	worker.SaveNeighbor(saveneighbor)
 	worker.SaveFinished.Wait()
 	time.Sleep(1 * time.Second)
 	fmt.Println("Scan Completed!")
