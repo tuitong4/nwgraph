@@ -6,7 +6,8 @@ import (
 )
 
 type Config struct {
-	Url string `json:"url"`
+	Url       string `json:"url"`
+	SaveBatch int64  `json:"savebatch"`
 }
 
 func NewConfig(file string) (*Config, error) {
