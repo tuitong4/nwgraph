@@ -127,6 +127,7 @@ func main() {
 			if err != nil {
 				return err
 			}
+			worker.SavedCount = 0
 		}
 		return err
 	}
