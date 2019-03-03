@@ -117,6 +117,8 @@ func main() {
 				return err
 			}
 
+			worker.SavedCount = 0
+
 			err = netgraph.TxClose()
 			if err != nil {
 				_ = netgraph.TxRollback()
