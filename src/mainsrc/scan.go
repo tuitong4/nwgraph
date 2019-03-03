@@ -43,10 +43,10 @@ func SaveNetNodes(netgraph *graph.NetGraph, netnodes []*util.NetNode) (map[strin
 func main() {
 
 	const (
-		MaxNetChassisIdChanNum    = 100
-		MaxNetChassisIdNum        = 300
-		MaxUnValidNeighborChanNum = 100
-		MaxValidNeighborChanNum   = 100
+		MaxNetChassisIdChanNum    = 10000
+		MaxNetChassisIdNum        = 30000
+		MaxUnValidNeighborChanNum = 20000
+		MaxValidNeighborChanNum   = 10000
 		Community                 = "360buy"
 	)
 

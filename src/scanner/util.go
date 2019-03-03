@@ -216,7 +216,7 @@ func GetNetNode(url string) ([]*NetNode, error) {
 			Level:      level,
 			Mgt:        mgt,
 			Oobmgt:     node.OutofbandIp,
-			Datacenter: node.DatacenterShortName,
+			Datacenter: node.DatacenterName,
 			Vendor:     node.Manufacturer,
 			Model:      node.Model,
 			Role:       node.Role,
