@@ -124,7 +124,6 @@ func (n *NetNeighborScanner) ReadChannel() {
 		for {
 			neighbor := <-n.UnValidNeighborChan
 			if rem_ip, ok := n.NetChassisId.Get(neighbor.RemoteIP); ok {
-				fmt.Println("OK", rem_ip, n.NetChassisId.Data)
 				neighbor.RemoteIP = rem_ip
 				n.ValidNeighborChan <- neighbor
 			} else {
@@ -196,7 +195,7 @@ func (n *NetNeighborScanner) SaveNeighbor(savefunc func(neighbor *NetNeighbor) e
 
 				//执行回调函数
 				if err := savefunc(neighbor); err != nil {
-					fmt.Println(err)
+					fmt.Println("[%s-%s]Save Neighbor Failed. %v", neighbor.LocalIP, neighbor.RemoteIP, err)
 				}
 
 				<-threadchan

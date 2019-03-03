@@ -1,29 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"graph"
+	"log"
 	. "mock"
+	"os"
 	"sync"
-	"time"
+	"util"
 )
 
-func run(url string) {
-	netnodes, err := GetNetNodeMock(url)
+func SaveNetNodes(netgraph *graph.NetGraph, netnodes []*util.NetNode) (map[string]int64, error) {
+	err := netgraph.TxStart()
 	if err != nil {
-		fmt.Println(err)
-	}
-	netgraph := graph.NewNetGraph("bolt://nw.jd.com:80", "neo4j", "wearenetwork", 0)
-
-	err = netgraph.ConnectNeo4j()
-	if err != nil {
-		fmt.Printf("%v", err)
-	}
-	defer netgraph.Exit()
-
-	err = netgraph.TxStart()
-	if err != nil {
-		fmt.Printf("%v", err)
+		return nil, err
 	}
 
 	//Store the node id.
@@ -32,14 +21,26 @@ func run(url string) {
 		nodeids[node.Mgt] = node.Id
 		err = netgraph.CreateNetNodeWithTx(node)
 		if err != nil {
-			fmt.Printf("%v", err)
+			return nil, err
 		}
 	}
 
 	err = netgraph.TxCommit()
 	if err != nil {
-		fmt.Printf("%v", err)
+		_ = netgraph.TxRollback()
+		return nil, err
 	}
+
+	err = netgraph.TxClose()
+	if err != nil {
+		_ = netgraph.TxRollback()
+		return nil, err
+	}
+
+	return nodeids, nil
+}
+func main() {
+	const URL = "http://api.joybase.jd.com/network_devices?management_ip=172.28.1.1,172.28.1.5&service_status=%E5%9C%A8%E7%BA%BF"
 
 	const (
 		MaxNetChassisIdChanNum    = 100
@@ -49,16 +50,25 @@ func run(url string) {
 		Community                 = "360buy"
 	)
 
-	saveneighbor := func(neighbor *NetNeighbor) error {
-		err := netgraph.CreateNetLinkByNetNodeID(
-			nodeids[neighbor.LocalIP],
-			nodeids[neighbor.RemoteIP],
-			neighbor.LocalPort,
-			neighbor.RemotePort)
-		if err != nil {
-			fmt.Printf("%v", err)
-		}
-		return err
+	netnodes, err := GetNetNodeMock(URL)
+	if err != nil {
+		log.Printf("Failed to get netnode infomations. %v", err)
+		os.Exit(1)
+	}
+
+	netgraph := graph.NewNetGraph("bolt://nw.jd.com:443", "neo4j", "wearenetwork", 0)
+
+	err = netgraph.ConnectNeo4j()
+	if err != nil {
+		log.Printf("Connect Neo4j Server Failed. %v", err)
+		os.Exit(1)
+	}
+	defer netgraph.Exit()
+
+	nodeids, err := SaveNetNodes(netgraph, netnodes)
+	if err != nil {
+		log.Printf("Save Nodes Failed. %v")
+		os.Exit(1)
 	}
 
 	worker := &NetNeighborScanner{
@@ -79,44 +89,37 @@ func run(url string) {
 
 	worker.ReadChannel()
 
+	err = netgraph.TxStart()
+	if err != nil {
+		log.Printf("%v", err)
+		os.Exit(1)
+	}
+
+	saveneighbor := func(neighbor *NetNeighbor) error {
+		err := netgraph.CreateNetLinkByNetNodeIDWithTX(
+			nodeids[neighbor.LocalIP],
+			nodeids[neighbor.RemoteIP],
+			neighbor.LocalPort,
+			neighbor.RemotePort)
+		return err
+	}
+
 	worker.SaveNeighbor(saveneighbor)
 
 	worker.SaveFinished.Wait()
 
-	time.Sleep(1 * time.Second)
-	fmt.Println("Scan Completed!")
-}
+	err = netgraph.TxCommit()
+	if err != nil {
+		_ = netgraph.TxRollback()
+		log.Printf("Save Neighbor TxCommit Failed, Rollbacked. %v", err)
+	}
 
-func main() {
-	const URL = "http://api.joybase.jd.com/network_devices?management_ip=172.28.1.1,172.28.1.5&service_status=%E5%9C%A8%E7%BA%BF"
-	run(URL)
-	/*
-		netnodes, err := GetNetNodeMock(URL)
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Println(netnodes)
+	err = netgraph.TxClose()
+	if err != nil {
+		_ = netgraph.TxRollback()
+		log.Printf("Save Neighbor TxClose Failed, Rollbacked. %v", err)
 
+	}
 
-		worker := &NetNeighborScanner{
-			NetNodes:         	 netnodes,
-			NetChassisIdChan:    make(chan [2]string, 100),
-			NetChassisId:        NewSafeMap(300),
-			UnValidNeighborChan: make(chan *NetNeighbor, 100),
-			UnValidNeighbor:     NodeListInit(),
-			ValidNeighborChan:   make(chan *NetNeighbor, 100),
-			Community:           "360buy",
-			ScanFinished:        false,
-			SaveFinished:        sync.WaitGroup{},
-		}
-
-		worker.SaveFinished.Add(1)
-
-		go worker.GenerateNeighbor()
-		worker.ReadChannel()
-		worker.SaveNeighbor(saveneighbor)
-		worker.SaveFinished.Wait()
-		time.Sleep(1 * time.Second)
-		fmt.Println("Scan Completed!") */
-
+	log.Printf("Scan Completed!")
 }

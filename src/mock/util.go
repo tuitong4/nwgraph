@@ -170,7 +170,7 @@ func GetNetNodeMock(url string) ([]*NetNode, error) {
 			Service:    "UK",
 			Pod:        "POD001",
 			Name:       "SW",
-			Labels:     NodeLable["SWITCH"],
+			Labels:     NodeLable["WR"],
 		})
 	}
 	return nodes, nil

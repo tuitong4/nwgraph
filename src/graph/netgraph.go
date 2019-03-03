@@ -8,25 +8,23 @@ import (
 )
 
 type NetGraph struct {
-	session      neo4j.Session
-	driver       neo4j.Driver
-	neo4jserver  string
-	neo4jauth    neo4j.AuthToken
-	accessmode   neo4j.AccessMode // 0 is WriteMode, 1 is ReadMode
-	tx           neo4j.Transaction
-	nodeidxcache map[int64]int64
+	session     neo4j.Session
+	driver      neo4j.Driver
+	neo4jserver string
+	neo4jauth   neo4j.AuthToken
+	accessmode  neo4j.AccessMode // 0 is WriteMode, 1 is ReadMode
+	tx          neo4j.Transaction
 }
 
 //NewNetGraph
 func NewNetGraph(bolt, boltname, boltpasswd string, accessmode neo4j.AccessMode) *NetGraph {
 	return &NetGraph{
-		session:      nil,
-		driver:       nil,
-		neo4jserver:  bolt,
-		neo4jauth:    neo4j.BasicAuth(boltname, boltpasswd, ""),
-		accessmode:   accessmode,
-		tx:           nil,
-		nodeidxcache: map[int64]int64{},
+		session:     nil,
+		driver:      nil,
+		neo4jserver: bolt,
+		neo4jauth:   neo4j.BasicAuth(boltname, boltpasswd, ""),
+		accessmode:  accessmode,
+		tx:          nil,
 	}
 }
 
@@ -61,6 +59,16 @@ func (n *NetGraph) TxClose() error {
 		return err
 	}
 	n.tx = nil
+	return nil
+}
+func (n *NetGraph) TxRollback() error {
+	if n.tx == nil {
+		return nil
+	}
+	err := n.tx.Rollback()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -100,22 +108,9 @@ func (n *NetGraph) CreateNetNode(node *NetNode) error {
 		`vendor:$vendor, model:$model, role:$role, service:$service,` +
 		`pod:$pod, name:$name}) RETURN id(n)`
 
-	result, err := n.session.Run(statement, params)
+	_, err := n.session.Run(statement, params)
 
-	if err != nil {
-		return err
-	}
-
-	for result.Next() {
-		r, ok := result.Record().GetByIndex(0).(int64)
-
-		if !ok {
-			return fmt.Errorf("unconvert record type to int64")
-		}
-		n.nodeidxcache[node.Id] = r
-	}
-
-	return nil
+	return err
 }
 
 func (n *NetGraph) CreateNetNodeWithTx(node *NetNode) error {
@@ -138,22 +133,9 @@ func (n *NetGraph) CreateNetNodeWithTx(node *NetNode) error {
 		`vendor:$vendor, model:$model, role:$role, service:$service,` +
 		`pod:$pod, name:$name}) RETURN id(n)`
 
-	result, err := n.tx.Run(statement, params)
+	_, err := n.tx.Run(statement, params)
 
-	if err != nil {
-		return err
-	}
-
-	for result.Next() {
-		r, ok := result.Record().GetByIndex(0).(int64)
-
-		if !ok {
-			return fmt.Errorf("unconvert record type to int64")
-		}
-		n.nodeidxcache[node.Id] = r
-	}
-
-	return nil
+	return err
 }
 
 func (n *NetGraph) CreateNetLinkByID(startid, endid int64, localports, remoteports []string) error {
