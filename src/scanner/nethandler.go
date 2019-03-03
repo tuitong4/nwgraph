@@ -24,6 +24,7 @@ type NetNeighborScanner struct {
 	Community           string
 	ScanFinished        bool
 	SaveFinished        sync.WaitGroup
+	SavedCount          int64
 }
 
 func (n *NetNeighborScanner) scanNeighbor(netnode *NetNode) error {
@@ -224,7 +225,7 @@ func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbo
 			continue
 		}
 		neighbor := <-n.ValidNeighborChan
-
+		n.SavedCount += 1
 		//执行回调函数
 		if err := savefunc(neighbor); err != nil {
 			fmt.Printf("[%s-%s]Save Neighbor Failed. %v\n", neighbor.LocalIP, neighbor.RemoteIP, err)

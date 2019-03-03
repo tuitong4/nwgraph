@@ -48,6 +48,7 @@ func main() {
 		MaxUnValidNeighborChanNum = 20000
 		MaxValidNeighborChanNum   = 10000
 		Community                 = "360buy"
+		CommitBatch               = 1000
 	)
 
 	const configfile = "./config.json"
@@ -88,6 +89,7 @@ func main() {
 		Community:           Community,
 		ScanFinished:        false,
 		SaveFinished:        sync.WaitGroup{},
+		SavedCount:          0,
 	}
 
 	worker.SaveFinished.Add(1)
@@ -108,6 +110,24 @@ func main() {
 			nodeids[neighbor.RemoteIP],
 			neighbor.LocalPort,
 			neighbor.RemotePort)
+		if worker.SavedCount > CommitBatch {
+			err = netgraph.TxCommit()
+			if err != nil {
+				_ = netgraph.TxRollback()
+				return err
+			}
+
+			err = netgraph.TxClose()
+			if err != nil {
+				_ = netgraph.TxRollback()
+				return err
+
+			}
+			err = netgraph.TxStart()
+			if err != nil {
+				return err
+			}
+		}
 		return err
 	}
 
