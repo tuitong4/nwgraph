@@ -1,4 +1,4 @@
-package iptool
+package util
 
 import (
 	"net"

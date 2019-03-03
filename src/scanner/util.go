@@ -1,6 +1,12 @@
 package scanner
 
-import "sync"
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"sync"
+	. "util"
+)
 
 /*
 * 一个自定义链表，用于频繁的操作删除
@@ -146,4 +152,70 @@ var NodeLable = map[string][]string{
 	"LR": {"SWITCH", "BACKBONE", "DCI"},
 	"PR": {"SWITCH", "BACKBONE"},
 	"GR": {"SWITCH", "BACKBONE", "DCI"},
+}
+
+/*
+*  抓取所有NetNode节点
+ */
+
+const MaxNetNodes = 27000
+
+func GetNetNode(url string) ([]*NetNode, error) {
+	/*
+	* url is the NetNode infomaton data base on remote.
+	 */
+
+	var nodes = make([]*NetNode, 0, MaxNetNodes)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	var r = &RespBody{}
+	if err := json.NewDecoder(resp.Body).Decode(r); err != nil {
+		return nil, err
+	}
+	if r.Code != 2000 {
+		return nil, fmt.Errorf("Failed retrive data for Code is %d", r.Code)
+	}
+
+	if r.Message != "OK" {
+		return nil, fmt.Errorf("Failed retrive data for Message is %s", r.Message)
+	}
+	for _, node := range r.Data.List {
+		level := NodeLevel[node.Role]
+		if node.Service == "BMC" {
+			level += 1
+		}
+		if node.Service == "BSW" {
+			level -= 0.3
+		}
+
+		var mgt string
+		if node.ManagementIp == "" {
+			if node.OutofbandIp != "" {
+				mgt = node.OutofbandIp
+			} else {
+				continue
+			}
+		} else {
+			mgt = node.ManagementIp
+		}
+		nodes = append(nodes, &NetNode{
+			Id:         GenNodeID(mgt),
+			Level:      level,
+			Mgt:        mgt,
+			Oobmgt:     node.OutofbandIp,
+			Datacenter: node.DatacenterShortName,
+			Vendor:     node.Manufacturer,
+			Model:      node.Model,
+			Role:       node.Role,
+			Service:    node.Service,
+			Pod:        node.PodName,
+			Name:       node.Name,
+			Labels:     NodeLable[node.Role],
+		})
+	}
+	return nodes, nil
 }

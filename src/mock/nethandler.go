@@ -1,95 +1,30 @@
 package mock
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
+	. "util"
 )
 
 type NetNeighbor struct {
-	localIP    string
-	localPort  string
-	remoteIP   string
-	remotePort string
+	LocalIP    string
+	LocalPort  []string
+	RemoteIP   string
+	RemotePort []string
 }
 
 type NetNeighborScanner struct {
-	NetnodeChan         chan *NetNode
+	//NetnodeChan         chan *NetNode
+	NetNodes            []*NetNode
 	NetChassisIdChan    chan [2]string
 	NetChassisId        SafeMap
 	UnValidNeighborChan chan *NetNeighbor
 	UnValidNeighbor     *NodeList
 	ValidNeighborChan   chan *NetNeighbor
 	Community           string
-	GetNodeFinished     bool
 	ScanFinished        bool
 	SaveFinished        sync.WaitGroup
-}
-
-func (n *NetNeighborScanner) GetNetNode(url string) error {
-	/*
-	* url is the NetNode infomaton data base on remote.
-	 */
-
-	resp, err := http.Get(url)
-	if err != nil {
-		n.GetNodeFinished = true
-		return err
-	}
-
-	defer resp.Body.Close()
-	var r = &RespBody{}
-	if err := json.NewDecoder(resp.Body).Decode(r); err != nil {
-		n.GetNodeFinished = true
-		return err
-	}
-	if r.Code != 2000 {
-		n.GetNodeFinished = true
-		return fmt.Errorf("Failed retrive data for Code is %d", r.Code)
-	}
-
-	if r.Message != "OK" {
-		n.GetNodeFinished = true
-		return fmt.Errorf("Failed retrive data for Message is %s", r.Message)
-	}
-	for _, node := range r.Data.List {
-		level := NodeLevel[node.Role]
-		if node.Service == "BMC" {
-			level += 1
-		}
-		if node.Service == "BSW" {
-			level -= 0.3
-		}
-
-		var mgt string
-		if node.ManagementIp == "" {
-			if node.OutofbandIp != "" {
-				mgt = node.OutofbandIp
-			} else {
-				continue
-			}
-		} else {
-			mgt = node.ManagementIp
-		}
-		fmt.Println(mgt)
-		n.NetnodeChan <- &NetNode{
-			level:      level,
-			mgt:        mgt,
-			oobmgt:     node.OutofbandIp,
-			datacenter: node.DatacenterShortName,
-			vendor:     node.Manufacturer,
-			model:      node.Model,
-			role:       node.Role,
-			service:    node.Service,
-			pod:        node.PodName,
-			name:       node.Name,
-			labels:     NodeLable[node.Role],
-		}
-	}
-	n.GetNodeFinished = true
-	return nil
 }
 
 func (n *NetNeighborScanner) scanNeighbor(netnode *NetNode) error {
@@ -105,7 +40,7 @@ func (n *NetNeighborScanner) scanNeighbor(netnode *NetNode) error {
 		return err
 	}
 	for _, id := range self_chassis {
-		n.NetChassisIdChan <- [2]string{id, nodehandler.node.mgt}
+		n.NetChassisIdChan <- [2]string{id, nodehandler.node.Mgt}
 	}
 
 	rem_chassis, err := nodehandler.RemChassisID()
@@ -123,27 +58,33 @@ func (n *NetNeighborScanner) scanNeighbor(netnode *NetNode) error {
 		return err
 	}
 
+	neighbors := map[string]*NetNeighbor{}
+
 	for rem_idx, chassis := range rem_chassis {
-		if localportname, ok := local_port[rem_idx]; ok {
-			if rem_ip, ok := n.NetChassisId.Get(chassis); ok {
-				pair := &NetNeighbor{
-					localIP:    nodehandler.node.mgt,
-					localPort:  localportname,
-					remoteIP:   rem_ip,
-					remotePort: rem_port[rem_idx],
-				}
-				n.ValidNeighborChan <- pair
-			} else {
-				pair := &NetNeighbor{
-					localIP:    nodehandler.node.mgt,
-					localPort:  localportname,
-					remoteIP:   chassis,
-					remotePort: rem_port[rem_idx],
-				}
-				n.UnValidNeighborChan <- pair
+		if _, ok := neighbors[chassis]; !ok {
+			neighbors[chassis] = &NetNeighbor{
+				LocalIP:    nodehandler.node.Mgt,
+				LocalPort:  []string{},
+				RemoteIP:   "",
+				RemotePort: []string{},
 			}
 		}
+		if localportname, ok := local_port[rem_idx]; ok {
+			neighbors[chassis].LocalPort = append(neighbors[chassis].LocalPort, localportname)
+			neighbors[chassis].RemotePort = append(neighbors[chassis].RemotePort, rem_port[rem_idx])
+		}
 	}
+
+	for chassis, neighbor := range neighbors {
+		if rem_ip, ok := n.NetChassisId.Get(chassis); ok {
+			neighbor.RemoteIP = rem_ip
+			n.ValidNeighborChan <- neighbor
+		} else {
+			neighbor.RemoteIP = chassis
+			n.UnValidNeighborChan <- neighbor
+		}
+	}
+
 	return nil
 }
 
@@ -151,14 +92,8 @@ func (n *NetNeighborScanner) GenerateNeighbor() {
 	maxThread := 500
 	threadchan := make(chan struct{}, maxThread)
 	wait := sync.WaitGroup{}
-	for {
-		if n.GetNodeFinished && len(n.NetnodeChan) == 0 {
-			wait.Wait()
-			n.ScanFinished = true
-			break
-		}
+	for _, netnode := range n.NetNodes {
 		threadchan <- struct{}{}
-		netnode := <-n.NetnodeChan
 		wait.Add(1)
 		go func(node *NetNode) {
 			err := n.scanNeighbor(node)
@@ -169,6 +104,8 @@ func (n *NetNeighborScanner) GenerateNeighbor() {
 			<-threadchan
 		}(netnode)
 	}
+	wait.Wait()
+	n.ScanFinished = true
 
 }
 
@@ -187,9 +124,9 @@ func (n *NetNeighborScanner) ReadChannel() {
 		var mutex sync.Mutex
 		for {
 			neighbor := <-n.UnValidNeighborChan
-			if rem_ip, ok := n.NetChassisId.Get(neighbor.remoteIP); ok {
+			if rem_ip, ok := n.NetChassisId.Get(neighbor.RemoteIP); ok {
 				fmt.Println("OK", rem_ip, n.NetChassisId.Data)
-				neighbor.remoteIP = rem_ip
+				neighbor.RemoteIP = rem_ip
 				n.ValidNeighborChan <- neighbor
 			} else {
 				mutex.Lock()
@@ -216,8 +153,8 @@ func (n *NetNeighborScanner) ReadChannel() {
 					break
 				}
 				neighbor = current.El
-				if rem_ip, ok := n.NetChassisId.Get(neighbor.remoteIP); ok {
-					neighbor.remoteIP = rem_ip
+				if rem_ip, ok := n.NetChassisId.Get(neighbor.RemoteIP); ok {
+					neighbor.RemoteIP = rem_ip
 
 					mutex.Lock()
 					current.Prev.Next = current.Next

@@ -1,6 +1,10 @@
 package mock
 
-import "sync"
+import (
+	"strconv"
+	"sync"
+	. "util"
+)
 
 /*
 * 一个自定义链表，用于频繁的操作删除
@@ -146,4 +150,28 @@ var NodeLable = map[string][]string{
 	"LR": {"SWITCH", "BACKBONE", "DCI"},
 	"PR": {"SWITCH", "BACKBONE"},
 	"GR": {"SWITCH", "BACKBONE", "DCI"},
+}
+
+func GetNetNodeMock(url string) ([]*NetNode, error) {
+	/*
+	* url is the NetNode infomaton data base on remote.
+	 */
+	var nodes = make([]*NetNode, 0, 10)
+	for i := 1; i < 4; i++ {
+		nodes = append(nodes, &NetNode{
+			Id:         GenNodeID("172.0.0." + strconv.Itoa(i)),
+			Level:      float64(i),
+			Mgt:        "172.0.0." + strconv.Itoa(i),
+			Oobmgt:     "",
+			Datacenter: "UNKOWN",
+			Vendor:     "H3C",
+			Model:      "12345",
+			Role:       "T1",
+			Service:    "UK",
+			Pod:        "POD001",
+			Name:       "SW",
+			Labels:     NodeLable["SWITCH"],
+		})
+	}
+	return nodes, nil
 }

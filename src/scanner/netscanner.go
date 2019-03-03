@@ -5,6 +5,7 @@ import (
 	"github.com/gosnmp"
 	"strings"
 	"time"
+	. "util"
 )
 
 const (
@@ -15,21 +16,6 @@ const (
 	lldpLocPortID         = "1.0.8802.1.1.2.1.3.7.1.3"
 )
 
-type NetNode struct {
-	id         int64
-	level      float64
-	mgt        string
-	oobmgt     string
-	datacenter string
-	vendor     string
-	model      string
-	role       string
-	service    string
-	pod        string
-	name       string
-	labels     []string
-}
-
 type NetNodeHandler struct {
 	node  *NetNode
 	snmpd *gosnmp.GoSNMP
@@ -39,7 +25,7 @@ func NewNetNodeHandler(netnode *NetNode, community string) *NetNodeHandler {
 	return &NetNodeHandler{
 		node: netnode,
 		snmpd: &gosnmp.GoSNMP{
-			Target:         netnode.mgt,
+			Target:         netnode.Mgt,
 			Port:           uint16(161),
 			Community:      community,
 			Version:        gosnmp.Version2c,
@@ -59,7 +45,7 @@ func (n *NetNodeHandler) SNMPClose() error {
 
 func (n *NetNodeHandler) SelfChassisID() ([]string, error) {
 	var result = []string{}
-	if strings.Contains(n.node.model, "Nexus") {
+	if strings.Contains(n.node.Model, "Nexus") {
 		resp, err := n.snmpd.BulkWalkAll(lldpLocChassisIDNexus)
 		if err != nil {
 			return nil, err
