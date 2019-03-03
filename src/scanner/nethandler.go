@@ -97,7 +97,7 @@ func (n *NetNeighborScanner) GenerateNeighbor() {
 		go func(node *NetNode) {
 			err := n.scanNeighbor(node)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("[%s], %v", node.Mgt, err)
 			}
 			wait.Done()
 			<-threadchan
@@ -195,13 +195,42 @@ func (n *NetNeighborScanner) SaveNeighbor(savefunc func(neighbor *NetNeighbor) e
 
 				//执行回调函数
 				if err := savefunc(neighbor); err != nil {
-					fmt.Println("[%s-%s]Save Neighbor Failed. %v", neighbor.LocalIP, neighbor.RemoteIP, err)
+					fmt.Printf("[%s-%s]Save Neighbor Failed. %v", neighbor.LocalIP, neighbor.RemoteIP, err)
 				}
 
 				<-threadchan
 			}
 			wait.Done()
 		}()
+	}
+	wait.Wait()
+	n.SaveFinished.Done()
+}
+
+func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbor) error) {
+	maxThread := 500
+	threadchan := make(chan struct{}, maxThread)
+
+	wait := sync.WaitGroup{}
+
+	for {
+		threadchan <- struct{}{}
+		if len(n.ValidNeighborChan) == 0 {
+			<-threadchan
+			if n.ScanFinished {
+				break
+			}
+			time.Sleep(2 * time.Second) //每次迭代延迟1s的时间
+			continue
+		}
+		neighbor := <-n.ValidNeighborChan
+
+		//执行回调函数
+		if err := savefunc(neighbor); err != nil {
+			fmt.Printf("[%s-%s]Save Neighbor Failed. %v", neighbor.LocalIP, neighbor.RemoteIP, err)
+		}
+
+		<-threadchan
 	}
 	wait.Wait()
 	n.SaveFinished.Done()

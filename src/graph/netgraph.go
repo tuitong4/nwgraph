@@ -88,6 +88,15 @@ func (n *NetGraph) Exit() {
 	_ = n.driver.Close()
 }
 
+func (n *NetGraph) DropDatabase() error {
+
+	statement := `MATCH(n) DETACH DELETE(n)`
+
+	_, err := n.session.Run(statement, nil)
+
+	return err
+}
+
 func (n *NetGraph) CreateNetNode(node *NetNode) error {
 	params := map[string]interface{}{
 		"id":      node.Id,

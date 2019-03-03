@@ -3,8 +3,9 @@ package main
 import (
 	"graph"
 	"log"
-	. "mock"
+	_ "mock"
 	"os"
+	. "scanner"
 	"sync"
 	"util"
 )
@@ -56,7 +57,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	netnodes, err := GetNetNodeMock(config.Url)
+	netnodes, err := GetNetNode(config.Url)
 	if err != nil {
 		log.Printf("Failed to get netnode infomations. %v", err)
 		os.Exit(1)
