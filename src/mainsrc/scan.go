@@ -40,7 +40,6 @@ func SaveNetNodes(netgraph *graph.NetGraph, netnodes []*util.NetNode) (map[strin
 	return nodeids, nil
 }
 func main() {
-	const URL = "http://api.joybase.jd.com/network_devices?management_ip=172.28.1.1,172.28.1.5&service_status=%E5%9C%A8%E7%BA%BF"
 
 	const (
 		MaxNetChassisIdChanNum    = 100
@@ -50,7 +49,14 @@ func main() {
 		Community                 = "360buy"
 	)
 
-	netnodes, err := GetNetNodeMock(URL)
+	const configfile = "./config.json"
+	config, err := util.NewConfig(configfile)
+	if err != nil {
+		log.Printf("Failed to get configuration infomations. %v", err)
+		os.Exit(1)
+	}
+
+	netnodes, err := GetNetNodeMock(config.Url)
 	if err != nil {
 		log.Printf("Failed to get netnode infomations. %v", err)
 		os.Exit(1)
