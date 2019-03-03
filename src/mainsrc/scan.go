@@ -48,7 +48,6 @@ func main() {
 		MaxUnValidNeighborChanNum = 20000
 		MaxValidNeighborChanNum   = 10000
 		Community                 = "360buy"
-		CommitBatch               = 1000
 	)
 
 	const configfile = "./config.json"
@@ -58,6 +57,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	var CommitBatch = config.SaveBatch
 	netnodes, err := GetNetNode(config.Url)
 	if err != nil {
 		log.Printf("Failed to get netnode infomations. %v\n", err)
