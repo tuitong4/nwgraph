@@ -53,13 +53,13 @@ func main() {
 	const configfile = "./config.json"
 	config, err := util.NewConfig(configfile)
 	if err != nil {
-		log.Printf("Failed to get configuration infomations. %v", err)
+		log.Printf("Failed to get configuration infomations. %v\n", err)
 		os.Exit(1)
 	}
 
 	netnodes, err := GetNetNode(config.Url)
 	if err != nil {
-		log.Printf("Failed to get netnode infomations. %v", err)
+		log.Printf("Failed to get netnode infomations. %v\n", err)
 		os.Exit(1)
 	}
 
@@ -67,14 +67,14 @@ func main() {
 
 	err = netgraph.ConnectNeo4j()
 	if err != nil {
-		log.Printf("Connect Neo4j Server Failed. %v", err)
+		log.Printf("Connect Neo4j Server Failed. %v\n", err)
 		os.Exit(1)
 	}
 	defer netgraph.Exit()
 
 	nodeids, err := SaveNetNodes(netgraph, netnodes)
 	if err != nil {
-		log.Printf("Save Nodes Failed. %v")
+		log.Printf("Save Nodes Failed. %v\n")
 		os.Exit(1)
 	}
 
@@ -98,7 +98,7 @@ func main() {
 
 	err = netgraph.TxStart()
 	if err != nil {
-		log.Printf("%v", err)
+		log.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
@@ -111,20 +111,20 @@ func main() {
 		return err
 	}
 
-	worker.SaveNeighbor(saveneighbor)
+	worker.SafeSaveNeighbor(saveneighbor)
 
 	worker.SaveFinished.Wait()
 
 	err = netgraph.TxCommit()
 	if err != nil {
 		_ = netgraph.TxRollback()
-		log.Printf("Save Neighbor TxCommit Failed, Rollbacked. %v", err)
+		log.Printf("Save Neighbor TxCommit Failed, Rollbacked. %v\n", err)
 	}
 
 	err = netgraph.TxClose()
 	if err != nil {
 		_ = netgraph.TxRollback()
-		log.Printf("Save Neighbor TxClose Failed, Rollbacked. %v", err)
+		log.Printf("Save Neighbor TxClose Failed, Rollbacked. %v\n", err)
 
 	}
 

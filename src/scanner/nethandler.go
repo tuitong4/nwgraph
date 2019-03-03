@@ -97,7 +97,7 @@ func (n *NetNeighborScanner) GenerateNeighbor() {
 		go func(node *NetNode) {
 			err := n.scanNeighbor(node)
 			if err != nil {
-				fmt.Printf("[%s], %v", node.Mgt, err)
+				fmt.Printf("[%s], %v\n", node.Mgt, err)
 			}
 			wait.Done()
 			<-threadchan
@@ -195,7 +195,7 @@ func (n *NetNeighborScanner) SaveNeighbor(savefunc func(neighbor *NetNeighbor) e
 
 				//执行回调函数
 				if err := savefunc(neighbor); err != nil {
-					fmt.Printf("[%s-%s]Save Neighbor Failed. %v", neighbor.LocalIP, neighbor.RemoteIP, err)
+					fmt.Printf("[%s-%s]Save Neighbor Failed. %v\n", neighbor.LocalIP, neighbor.RemoteIP, err)
 				}
 
 				<-threadchan
@@ -227,7 +227,7 @@ func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbo
 
 		//执行回调函数
 		if err := savefunc(neighbor); err != nil {
-			fmt.Printf("[%s-%s]Save Neighbor Failed. %v", neighbor.LocalIP, neighbor.RemoteIP, err)
+			fmt.Printf("[%s-%s]Save Neighbor Failed. %v\n", neighbor.LocalIP, neighbor.RemoteIP, err)
 		}
 
 		<-threadchan
