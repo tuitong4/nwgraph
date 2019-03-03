@@ -12,7 +12,7 @@ type NetNode struct {
 	Service    string
 	Pod        string
 	Name       string
-	Labels     []string
+	Lables     []string
 }
 
 //对于没法将nodeid转换为int64的，在GLOBAL_CONUTER中选择一个数

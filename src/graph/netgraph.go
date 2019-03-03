@@ -103,7 +103,7 @@ func (n *NetGraph) CreateNetNode(node *NetNode) error {
 		"name":    node.Name,
 	}
 
-	statement := `CREATE(n:` + strings.Join(node.Labels, ":") +
+	statement := `CREATE(n:` + strings.Join(node.Lables, ":") +
 		`{id:$id ,level:$level, mgt:$mgt, oobmgt:$oobmgt, dc:$dc,` +
 		`vendor:$vendor, model:$model, role:$role, service:$service,` +
 		`pod:$pod, name:$name}) RETURN id(n)`
@@ -128,7 +128,7 @@ func (n *NetGraph) CreateNetNodeWithTx(node *NetNode) error {
 		"name":    node.Name,
 	}
 
-	statement := `CREATE(n:` + strings.Join(node.Labels, ":") +
+	statement := `CREATE(n:` + strings.Join(node.Lables, ":") +
 		`{id:$id ,level:$level, mgt:$mgt, oobmgt:$oobmgt, dc:$dc,` +
 		`vendor:$vendor, model:$model, role:$role, service:$service,` +
 		`pod:$pod, name:$name}) RETURN id(n)`

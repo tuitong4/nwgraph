@@ -202,6 +202,15 @@ func GetNetNode(url string) ([]*NetNode, error) {
 		} else {
 			mgt = node.ManagementIp
 		}
+
+		lable := NodeLable[node.Role]
+		if lable == nil {
+			lable = []string{"SWITCH"}
+		}
+
+		if NodeLable[node.Role] == nil {
+
+		}
 		nodes = append(nodes, &NetNode{
 			Id:         GenNodeID(mgt),
 			Level:      level,
@@ -214,7 +223,7 @@ func GetNetNode(url string) ([]*NetNode, error) {
 			Service:    node.Service,
 			Pod:        node.PodName,
 			Name:       node.Name,
-			Labels:     NodeLable[node.Role],
+			Lables:     lable,
 		})
 	}
 	return nodes, nil
