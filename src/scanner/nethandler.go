@@ -168,7 +168,7 @@ func (n *NetNeighborScanner) ReadChannel() {
 				current = current.Next
 			}
 			mutex.Lock()
-			Logger.Printf("Current Lenght of chain: %d.", Counter)
+			fmt.Printf("Current Lenght of chain: %d.", Counter)
 			mutex.Unlock()
 			if n.ScanFinished && epoch > 4 {
 				break
@@ -220,7 +220,7 @@ func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbo
 
 	for {
 		threadchan <- struct{}{}
-		Logger.Printf("Length of ValidNeighborChan: %d", len(n.ValidNeighborChan))
+		fmt.Printf("Length of ValidNeighborChan: %d", len(n.ValidNeighborChan))
 		if len(n.ValidNeighborChan) == 0 {
 			<-threadchan
 			if n.ScanFinished {
@@ -233,7 +233,7 @@ func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbo
 		n.SavedCount += 1
 		//执行回调函数
 		if err := savefunc(neighbor); err != nil {
-			Logger.Printf("[%s-%s]Save Neighbor Failed. %v\n", neighbor.LocalIP, neighbor.RemoteIP, err)
+			fmt.Printf("[%s-%s]Save Neighbor Failed. %v\n", neighbor.LocalIP, neighbor.RemoteIP, err)
 		}
 
 		<-threadchan
