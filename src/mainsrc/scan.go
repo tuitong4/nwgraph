@@ -50,6 +50,10 @@ func main() {
 		Community                 = "360buy"
 	)
 
+	logFile := "./netscan.log"
+	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE, 666)
+	util.Logger = log.New(file, "[INFO]", log.LstdFlags|log.Lshortfile)
+
 	const configfile = "./config.json"
 	config, err := util.NewConfig(configfile)
 	if err != nil {
