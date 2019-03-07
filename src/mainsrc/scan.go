@@ -51,20 +51,25 @@ func main() {
 	)
 
 	logFile := "./netscan.log"
-	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE, 666)
-	util.Logger = log.New(file, "[INFO]", log.LstdFlags|log.Lshortfile)
+	logbufer, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE, 666)
+	if err != nil {
+		log.Printf("Failed to Open File. %v\n", err)
+	}
+	defer logbufer.Close()
+
+	util.Logger = log.New(logbufer, "[INFO]", log.LstdFlags)
 
 	const configfile = "./config.json"
 	config, err := util.NewConfig(configfile)
 	if err != nil {
-		log.Printf("Failed to get configuration infomations. %v\n", err)
+		util.Logger.Printf("Failed to get configuration infomations. %v\n", err)
 		os.Exit(1)
 	}
 
 	var CommitBatch = config.SaveBatch
 	netnodes, err := GetNetNode(config.Url)
 	if err != nil {
-		log.Printf("Failed to get netnode infomations. %v\n", err)
+		util.Logger.Printf("Failed to get netnode infomations. %v\n", err)
 		os.Exit(1)
 	}
 
@@ -72,14 +77,14 @@ func main() {
 
 	err = netgraph.ConnectNeo4j()
 	if err != nil {
-		log.Printf("Connect Neo4j Server Failed. %v\n", err)
+		util.Logger.Printf("Connect Neo4j Server Failed. %v\n", err)
 		os.Exit(1)
 	}
 	defer netgraph.Exit()
 
 	nodeids, err := SaveNetNodes(netgraph, netnodes)
 	if err != nil {
-		log.Printf("Save Nodes Failed. %v\n")
+		util.Logger.Printf("Save Nodes Failed. %v\n")
 		os.Exit(1)
 	}
 
@@ -104,7 +109,7 @@ func main() {
 
 	err = netgraph.TxStart()
 	if err != nil {
-		log.Printf("%v\n", err)
+		util.Logger.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
@@ -145,15 +150,15 @@ func main() {
 	err = netgraph.TxCommit()
 	if err != nil {
 		_ = netgraph.TxRollback()
-		log.Printf("Save Neighbor TxCommit Failed, Rollbacked. %v\n", err)
+		util.Logger.Printf("Save Neighbor TxCommit Failed, Rollbacked. %v\n", err)
 	}
 
 	err = netgraph.TxClose()
 	if err != nil {
 		_ = netgraph.TxRollback()
-		log.Printf("Save Neighbor TxClose Failed, Rollbacked. %v\n", err)
+		util.Logger.Printf("Save Neighbor TxClose Failed, Rollbacked. %v\n", err)
 
 	}
 
-	log.Printf("Scan Completed!")
+	util.Logger.Printf("Scan Completed!")
 }

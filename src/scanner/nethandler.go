@@ -168,7 +168,7 @@ func (n *NetNeighborScanner) ReadChannel() {
 				current = current.Next
 			}
 			mutex.Lock()
-			Logger.Printf("Current Lenght of chain: %sd.", Counter)
+			Logger.Printf("Current Lenght of chain: %d.", Counter)
 			mutex.Unlock()
 			if n.ScanFinished && epoch > 4 {
 				break
