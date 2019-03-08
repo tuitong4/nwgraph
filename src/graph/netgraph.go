@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"neo4j-go-driver/neo4j"
 	"strings"
+	"time"
 	. "util"
 )
 
@@ -30,7 +31,11 @@ func NewNetGraph(bolt, boltname, boltpasswd string, accessmode neo4j.AccessMode)
 
 func (n *NetGraph) ConnectNeo4j() error {
 	var err error
-	if n.driver, err = neo4j.NewDriver(n.neo4jserver, n.neo4jauth); err != nil {
+	if n.driver, err = neo4j.NewDriver(n.neo4jserver, n.neo4jauth, func(config *neo4j.Config) {
+		config.MaxConnectionLifetime = 30 * time.Minute
+		config.MaxConnectionPoolSize = 50
+		config.ConnectionAcquisitionTimeout = 2 * time.Minute
+	}); err != nil {
 		return err
 	}
 
