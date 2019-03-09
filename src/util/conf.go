@@ -15,7 +15,7 @@ type Config struct {
 }
 
 func NewConfig(file string) (*Config, error) {
-	c := &Config{Url: ""}
+	c := &Config{"", 1000, "", "", "", ""}
 
 	data, err := io.ReadFile(file)
 	if err != nil {
