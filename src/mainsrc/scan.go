@@ -67,7 +67,7 @@ func main() {
 	const configfile = "./config.json"
 	config, err := util.NewConfig(configfile)
 	if err != nil {
-		util.Logger.Printf("Failed to get configuration infomations. %v\n", err)
+		log.Printf("Failed to get configuration infomations. %v\n", err)
 		os.Exit(1)
 	}
 
