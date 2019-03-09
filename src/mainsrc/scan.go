@@ -11,7 +11,15 @@ import (
 )
 
 func SaveNetNodes(netgraph *graph.NetGraph, netnodes []*util.NetNode) (map[string]int64, error) {
-	err := netgraph.TxStart()
+
+	err := netgraph.DropDatabase()
+	if err != nil {
+		return nil, err
+	}
+
+	_ = netgraph.DropIndexOnNetNodeID()
+
+	err = netgraph.TxStart()
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +46,11 @@ func SaveNetNodes(netgraph *graph.NetGraph, netnodes []*util.NetNode) (map[strin
 		return nil, err
 	}
 
+	err = netgraph.CreateIndexOnNetNodeID()
+	if err != nil {
+		return nil, err
+	}
+
 	return nodeids, nil
 }
 func main() {
@@ -50,15 +63,7 @@ func main() {
 		Community                 = "360buy"
 	)
 
-	logFile := "./netscan.log"
-	logbufer, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE, 666)
-	if err != nil {
-		log.Printf("Failed to Open File. %v\n", err)
-	}
-	defer logbufer.Close()
-
-	util.Logger = log.New(logbufer, "[INFO]", log.LstdFlags)
-
+	//the config
 	const configfile = "./config.json"
 	config, err := util.NewConfig(configfile)
 	if err != nil {
@@ -66,14 +71,29 @@ func main() {
 		os.Exit(1)
 	}
 
-	//var CommitBatch = config.SaveBatch
+	// the batch commit number
+	var CommitBatch = config.SaveBatch
+
+	//Init logging file.
+	logFile := config.LogFile
+	logbufer, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 666)
+	if err != nil {
+		log.Printf("Failed to Open File. %v\n", err)
+	}
+	defer logbufer.Close()
+
+	util.Logger = log.New(logbufer, "[INFO]", log.LstdFlags)
+
 	netnodes, err := GetNetNode(config.Url)
 	if err != nil {
 		util.Logger.Printf("Failed to get netnode infomations. %v\n", err)
 		os.Exit(1)
 	}
 
-	netgraph := graph.NewNetGraph("bolt://nw.jd.com:443", "neo4j", "wearenetwork", 0)
+	boltserver := config.NeoServer
+	boltname := config.NeoUser
+	boltpwd := config.NeoPassword
+	netgraph := graph.NewNetGraph(boltserver, boltname, boltpwd, 0)
 
 	err = netgraph.ConnectNeo4j()
 	if err != nil {
@@ -107,57 +127,44 @@ func main() {
 
 	worker.ReadChannel()
 
-	/*
-		err = netgraph.TxStart()
-		if err != nil {
-			util.Logger.Printf("%v\n", err)
-			os.Exit(1)
-		}
+	err = netgraph.TxStart()
+	if err != nil {
+		util.Logger.Printf("%v\n", err)
+		os.Exit(1)
+	}
 
-		saveneighbor := func(neighbor *NetNeighbor) error {
-			//log.Println("StartInsert")
-			err := netgraph.CreateNetLinkByNetNodeIDWithTX(
-				nodeids[neighbor.LocalIP],
-				nodeids[neighbor.RemoteIP],
-				neighbor.LocalPort,
-				neighbor.RemotePort)
-			//log.Println("FinisedInsert")
-			if worker.SavedCount > CommitBatch {
-				log.Println("StartCommit")
-				err = netgraph.TxCommit()
-				if err != nil {
-					_ = netgraph.TxRollback()
-					return err
-				}
-
-				worker.SavedCount = 0
-
-				err = netgraph.TxClose()
-				if err != nil {
-					_ = netgraph.TxRollback()
-					return err
-
-				}
-				err = netgraph.TxStart()
-				if err != nil {
-					return err
-				}
-				worker.SavedCount = 0
-				log.Println("FinishedCommit")
-			}
-			return err
-		}
-	*/
 	saveneighbor := func(neighbor *NetNeighbor) error {
-		//log.Println("StartInsert")
-		err := netgraph.CreateNetLinkByNetNodeID(
+		err := netgraph.CreateNetLinkByNetNodeIDWithTX(
 			nodeids[neighbor.LocalIP],
 			nodeids[neighbor.RemoteIP],
 			neighbor.LocalPort,
 			neighbor.RemotePort)
-		//log.Println("FinisedInsert")
+		if worker.SavedCount > CommitBatch {
+			log.Println("StartCommit")
+			err = netgraph.TxCommit()
+			if err != nil {
+				_ = netgraph.TxRollback()
+				return err
+			}
+
+			worker.SavedCount = 0
+
+			err = netgraph.TxClose()
+			if err != nil {
+				_ = netgraph.TxRollback()
+				return err
+
+			}
+			err = netgraph.TxStart()
+			if err != nil {
+				return err
+			}
+			worker.SavedCount = 0
+			log.Println("FinishedCommit")
+		}
 		return err
 	}
+
 	worker.SafeSaveNeighbor(saveneighbor)
 
 	worker.SaveFinished.Wait()

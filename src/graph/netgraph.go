@@ -102,6 +102,22 @@ func (n *NetGraph) DropDatabase() error {
 	return err
 }
 
+func (n *NetGraph) CreateIndexOnNetNodeID() error {
+	statement := `CREATE INDEX ON:SWITCH{id}`
+
+	_, err := n.session.Run(statement, nil)
+
+	return err
+}
+
+func (n *NetGraph) DropIndexOnNetNodeID() error {
+	statement := `DROP INDEX ON:SWITCH{id}`
+
+	_, err := n.session.Run(statement, nil)
+
+	return err
+}
+
 func (n *NetGraph) CreateNetNode(node *NetNode) error {
 	params := map[string]interface{}{
 		"id":      node.Id,
