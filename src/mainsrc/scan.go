@@ -66,7 +66,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	var CommitBatch = config.SaveBatch
+	//var CommitBatch = config.SaveBatch
 	netnodes, err := GetNetNode(config.Url)
 	if err != nil {
 		util.Logger.Printf("Failed to get netnode infomations. %v\n", err)
