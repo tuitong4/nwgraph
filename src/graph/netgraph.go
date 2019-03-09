@@ -103,7 +103,7 @@ func (n *NetGraph) DropDatabase() error {
 }
 
 func (n *NetGraph) CreateIndexOnNetNodeID() error {
-	statement := `CREATE INDEX ON:SWITCH{id}`
+	statement := `CREATE INDEX ON:SWITCH(id)`
 
 	_, err := n.session.Run(statement, nil)
 
@@ -111,7 +111,7 @@ func (n *NetGraph) CreateIndexOnNetNodeID() error {
 }
 
 func (n *NetGraph) DropIndexOnNetNodeID() error {
-	statement := `DROP INDEX ON:SWITCH{id}`
+	statement := `DROP INDEX ON:SWITCH(id)`
 
 	_, err := n.session.Run(statement, nil)
 
