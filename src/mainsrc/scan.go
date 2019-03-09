@@ -107,46 +107,57 @@ func main() {
 
 	worker.ReadChannel()
 
-	err = netgraph.TxStart()
-	if err != nil {
-		util.Logger.Printf("%v\n", err)
-		os.Exit(1)
-	}
+	/*
+		err = netgraph.TxStart()
+		if err != nil {
+			util.Logger.Printf("%v\n", err)
+			os.Exit(1)
+		}
 
+		saveneighbor := func(neighbor *NetNeighbor) error {
+			//log.Println("StartInsert")
+			err := netgraph.CreateNetLinkByNetNodeIDWithTX(
+				nodeids[neighbor.LocalIP],
+				nodeids[neighbor.RemoteIP],
+				neighbor.LocalPort,
+				neighbor.RemotePort)
+			//log.Println("FinisedInsert")
+			if worker.SavedCount > CommitBatch {
+				log.Println("StartCommit")
+				err = netgraph.TxCommit()
+				if err != nil {
+					_ = netgraph.TxRollback()
+					return err
+				}
+
+				worker.SavedCount = 0
+
+				err = netgraph.TxClose()
+				if err != nil {
+					_ = netgraph.TxRollback()
+					return err
+
+				}
+				err = netgraph.TxStart()
+				if err != nil {
+					return err
+				}
+				worker.SavedCount = 0
+				log.Println("FinishedCommit")
+			}
+			return err
+		}
+	*/
 	saveneighbor := func(neighbor *NetNeighbor) error {
 		//log.Println("StartInsert")
-		err := netgraph.CreateNetLinkByNetNodeIDWithTX(
+		err := netgraph.CreateNetLinkByNetNodeID(
 			nodeids[neighbor.LocalIP],
 			nodeids[neighbor.RemoteIP],
 			neighbor.LocalPort,
 			neighbor.RemotePort)
 		//log.Println("FinisedInsert")
-		if worker.SavedCount > CommitBatch {
-			log.Println("StartCommit")
-			err = netgraph.TxCommit()
-			if err != nil {
-				_ = netgraph.TxRollback()
-				return err
-			}
-
-			worker.SavedCount = 0
-
-			err = netgraph.TxClose()
-			if err != nil {
-				_ = netgraph.TxRollback()
-				return err
-
-			}
-			err = netgraph.TxStart()
-			if err != nil {
-				return err
-			}
-			worker.SavedCount = 0
-			log.Println("FinishedCommit")
-		}
 		return err
 	}
-
 	worker.SafeSaveNeighbor(saveneighbor)
 
 	worker.SaveFinished.Wait()
