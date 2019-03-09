@@ -114,14 +114,15 @@ func main() {
 	}
 
 	saveneighbor := func(neighbor *NetNeighbor) error {
-		log.Println("StartInsert")
+		//log.Println("StartInsert")
 		err := netgraph.CreateNetLinkByNetNodeIDWithTX(
 			nodeids[neighbor.LocalIP],
 			nodeids[neighbor.RemoteIP],
 			neighbor.LocalPort,
 			neighbor.RemotePort)
-		log.Println("FinisedInsert")
+		//log.Println("FinisedInsert")
 		if worker.SavedCount > CommitBatch {
+			log.Println("StartCommit")
 			err = netgraph.TxCommit()
 			if err != nil {
 				_ = netgraph.TxRollback()
@@ -141,6 +142,7 @@ func main() {
 				return err
 			}
 			worker.SavedCount = 0
+			log.Println("FinishedCommit")
 		}
 		return err
 	}

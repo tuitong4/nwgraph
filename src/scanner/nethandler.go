@@ -218,7 +218,7 @@ func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbo
 
 	for {
 		threadchan <- struct{}{}
-		fmt.Printf("Length of ValidNeighborChan: %d\n", len(n.ValidNeighborChan))
+		fmt.Printf("Length of ValidNeighborChan: %d; UnValidNeighborChan: %d\n", len(n.ValidNeighborChan), len(n.UnValidNeighborChan))
 		if len(n.ValidNeighborChan) == 0 {
 			<-threadchan
 			if n.ScanFinished {
