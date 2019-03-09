@@ -216,8 +216,6 @@ func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbo
 	maxThread := 500
 	threadchan := make(chan struct{}, maxThread)
 
-	wait := sync.WaitGroup{}
-
 	for {
 		threadchan <- struct{}{}
 		fmt.Printf("Length of ValidNeighborChan: %d\n", len(n.ValidNeighborChan))
@@ -226,7 +224,7 @@ func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbo
 			if n.ScanFinished {
 				break
 			}
-			time.Sleep(2 * time.Second) //每次迭代延迟1s的时间
+			time.Sleep(2 * time.Second) //每次迭代延迟2s的时间
 			continue
 		}
 		neighbor := <-n.ValidNeighborChan
@@ -238,6 +236,5 @@ func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbo
 
 		<-threadchan
 	}
-	wait.Wait()
 	n.SaveFinished.Done()
 }
