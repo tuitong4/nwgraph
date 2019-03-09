@@ -1,7 +1,6 @@
 package scanner
 
 import (
-	"fmt"
 	"sync"
 	"time"
 	. "util"
@@ -110,7 +109,7 @@ func (n *NetNeighborScanner) GenerateNeighbor() {
 }
 
 func (n *NetNeighborScanner) ReadChannel() {
-	var Counter = 0
+	//var Counter = 0
 	// read NetChassisIdChan
 	go func() {
 		for {
@@ -130,7 +129,7 @@ func (n *NetNeighborScanner) ReadChannel() {
 			} else {
 				mutex.Lock()
 				NodeListPush(n.UnValidNeighbor, neighbor)
-				Counter += 1
+				//Counter += 1
 				mutex.Unlock()
 			}
 		}
@@ -147,7 +146,7 @@ func (n *NetNeighborScanner) ReadChannel() {
 				if current.El == nil {
 					if !removed {
 						epoch += 1
-						time.Sleep(1 * time.Second) //每次迭代延迟1s的时间
+						time.Sleep(2 * time.Second) //每次迭代延迟1s的时间
 					}
 					removed = false
 					break
@@ -159,7 +158,7 @@ func (n *NetNeighborScanner) ReadChannel() {
 					mutex.Lock()
 					current.Prev.Next = current.Next
 					current.Next.Prev = current.Prev
-					Counter -= 1
+					//Counter -= 1
 					mutex.Unlock()
 
 					removed = true
@@ -167,9 +166,9 @@ func (n *NetNeighborScanner) ReadChannel() {
 				}
 				current = current.Next
 			}
-			mutex.Lock()
-			fmt.Printf("Current Lenght of chain: %d.\n", Counter)
-			mutex.Unlock()
+			//mutex.Lock()
+			//fmt.Printf("Current Lenght of chain: %d.\n", Counter)
+			//mutex.Unlock()
 			if n.ScanFinished && epoch > 4 {
 				break
 			}
@@ -218,7 +217,7 @@ func (n *NetNeighborScanner) SafeSaveNeighbor(savefunc func(neighbor *NetNeighbo
 
 	for {
 		threadchan <- struct{}{}
-		fmt.Printf("Length of ValidNeighborChan: %d; UnValidNeighborChan: %d\n", len(n.ValidNeighborChan), len(n.UnValidNeighborChan))
+		//fmt.Printf("Length of ValidNeighborChan: %d; UnValidNeighborChan: %d\n", len(n.ValidNeighborChan), len(n.UnValidNeighborChan))
 		if len(n.ValidNeighborChan) == 0 {
 			<-threadchan
 			if n.ScanFinished {
