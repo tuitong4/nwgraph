@@ -140,7 +140,6 @@ func main() {
 			neighbor.LocalPort,
 			neighbor.RemotePort)
 		if worker.SavedCount > CommitBatch {
-			log.Println("StartCommit")
 			err = netgraph.TxCommit()
 			if err != nil {
 				_ = netgraph.TxRollback()
@@ -160,7 +159,6 @@ func main() {
 				return err
 			}
 			worker.SavedCount = 0
-			log.Println("FinishedCommit")
 		}
 		return err
 	}
