@@ -104,7 +104,7 @@ func main() {
 
 	nodeids, err := SaveNetNodes(netgraph, netnodes)
 	if err != nil {
-		util.Logger.Printf("Save Nodes Failed. %v\n")
+		util.Logger.Printf("Save Nodes Failed. %v\n", err)
 		os.Exit(1)
 	}
 
